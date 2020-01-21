@@ -14,7 +14,7 @@ const Register = props => {
       props.history.push('/');
     }
     if (error) {
-      setAlert('User already exists', 'danger');
+      setAlert(error, 'danger');
       clearErrors();
     }
     // eslint-disable-next-line
