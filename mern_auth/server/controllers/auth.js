@@ -3,15 +3,15 @@ const sgMail = require('@sendgrid/mail');
 
 const User = require('../model/user');
 
-sgMail.setApiKey(process.env.SEND_GRID_API);
-
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+sgMail.authenticate;
 exports.signup = (req, res) => {
   const { name, email, password } = req.body;
 
   User.findOne({ email }).exec((err, user) => {
     if (user) {
       return res.status(400).json({
-        error: ' Email already registered'
+        error: 'Email already registered'
       });
     }
 
@@ -24,13 +24,12 @@ exports.signup = (req, res) => {
       subject: `Account activation link`,
       html: `
       <h2>Please use the following link to activate your account</h2>
-      <p>${process.env.CLIENT_URL}/auth/activate/${token}</p>
+      <p>${process.env.CLIENT_URL}/api/account-activation/${token}</p>
       <hr />
       <p>This email may contain sensitive information</p>
       <p>${process.env.CLIENT_URL}</p>
       `
     };
-    console.log(token);
 
     sgMail
       .send(emailData)
