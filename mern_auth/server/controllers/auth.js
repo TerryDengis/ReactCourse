@@ -24,7 +24,7 @@ exports.signup = (req, res) => {
       subject: `Account activation link`,
       html: `
       <h2>Please use the following link to activate your account</h2>
-      <p>${process.env.CLIENT_URL}/api/account-activation/${token}</p>
+      <p>${process.env.CLIENT_URL}/account-activation/${token}</p>
       <hr />
       <p>This email may contain sensitive information</p>
       <p>${process.env.CLIENT_URL}</p>
@@ -55,17 +55,20 @@ exports.accountActivation = (req, res) => {
       if (err) {
         console.log('JWT VERIFY IN ACCOUNT ACTIVATION ERROR', err);
         return res.status(401).json({
-          error: 'Expired link.  Signup again'
+          error: 'Expired link.  Signup again!'
         });
       }
+      console.log('hello');
+
       const { name, email, password } = jwt.decode(token);
+
       const newUser = new User({ name, email, password });
 
       newUser.save((err, success) => {
         if (err) {
           console.log('SIGNUP ERROR', err);
           return res.status(401).json({
-            error: 'Error saving to database'
+            error: 'Error saving to database!'
           });
         }
       });
@@ -76,7 +79,7 @@ exports.accountActivation = (req, res) => {
   } else {
     console.log('NO TOKEN RECEIVED');
     return res.status(401).json({
-      error: 'No token recieved'
+      error: 'No token recieved!'
     });
   }
 };
