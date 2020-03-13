@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const expressJwt = require('express-jwt');
 const sgMail = require('@sendgrid/mail');
 
 const User = require('../model/user');
@@ -126,7 +127,7 @@ exports.signin = (req, res) => {
       });
     } else {
       // generate token and send to client
-      const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
       const { _id, name, email, role } = user;
 
       return res.json({
@@ -134,5 +135,27 @@ exports.signin = (req, res) => {
         user: { _id, name, email, role }
       });
     }
+  });
+};
+
+exports.requireSignin = expressJwt({
+  secret: process.env.JWT_SECRET // req.user
+});
+
+exports.adminMiddleware = (req, res, next) => {
+  const userId = req.user._id;
+  User.findById(userId).exec((err, user) => {
+    if (err || !user) {
+      return res.status(400).json({
+        error: 'User does not exist.'
+      });
+    }
+    if (user.role !== 'admin') {
+      return res.status(400).json({
+        error: 'Not an admin. Access denied'
+      });
+    }
+    req.profile = user;
+    next();
   });
 };
