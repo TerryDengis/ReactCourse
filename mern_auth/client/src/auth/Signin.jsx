@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.min.css';
 
 import Layout from '../core/Layout';
 import { authenticate, isAuth } from './helper';
+import Google from './Google';
 
 const Signin = ({ history }) => {
   const [values, setValues] = useState({
@@ -18,6 +19,12 @@ const Signin = ({ history }) => {
 
   const handleChange = field => event => {
     setValues({ ...values, [field]: event.target.value });
+  };
+
+  const informParent = res => {
+    authenticate(res, () => {
+      isAuth() && isAuth().role === 'admin' ? history.push('/admin') : history.push('/private');
+    });
   };
 
   const clickSubmit = event => {
@@ -77,6 +84,7 @@ const Signin = ({ history }) => {
         <ToastContainer />
         {isAuth() ? <Redirect to="/" /> : null}
         <h1 className="p-5 text-center">Signin</h1>
+        <Google informParent={informParent} />
         {signinForm()}
         <br />
         <Link to="/forgot-password" className="btn btn-sm btn-outline-danger">

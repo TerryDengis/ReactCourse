@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const expressJwt = require('express-jwt');
 const sgMail = require('@sendgrid/mail');
 const _ = require('lodash');
+const { OAuth2Client } = require('google-auth-library');
 
 const User = require('../model/user');
 
@@ -245,4 +246,64 @@ exports.resetPassword = (req, res) => {
       });
     });
   }
+};
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+exports.googleLogin = (req, res) => {
+  const { idToken } = req.body;
+  console.log('in.googleLogin');
+  client
+    .verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID })
+    .then(resp => {
+      const { email_verified, name, email } = resp.payload;
+      console.log('in.then');
+
+      if (email_verified) {
+        User.findOne({ email }).exec((err, user) => {
+          if (user) {
+            console.log('in.if user');
+            const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+            const { _id, email, name, role } = user;
+
+            return res.json({
+              token,
+              user: { _id, email, name, role }
+            });
+          } else {
+            console.log('in.else if user');
+            const password = email + process.env.JWT_SECRET;
+            user = new User({ name, email, password });
+            user.save((err, data) => {
+              if (err) {
+                console.log('ERROR GOOGLE LOGIN USER SAVE ', err);
+                return resp.status(400).json({
+                  error: 'User signup failed with Google'
+                });
+              } else {
+                const token = jwt.sign({ _id: data._id }, process.env.JWT_SECRET, {
+                  expiresIn: '1d'
+                });
+                const { _id, email, name, role } = data;
+
+                res.json({
+                  token,
+                  user: { _id, email, name, role }
+                });
+              }
+            });
+          }
+        });
+      }
+    })
+    .catch(err => {
+      console.log('ERROR GOOGLE VERIFICATION ', err);
+      return res.status(400).json({
+        error: 'User verification failed with Google'
+      });
+    });
+};
+
+exports.facebookLogin = (req, res) => {
+  //
 };
