@@ -3,6 +3,7 @@ const expressJwt = require('express-jwt');
 const sgMail = require('@sendgrid/mail');
 const _ = require('lodash');
 const { OAuth2Client } = require('google-auth-library');
+const fetch = require('node-fetch');
 
 const User = require('../model/user');
 
@@ -262,7 +263,6 @@ exports.googleLogin = (req, res) => {
       if (email_verified) {
         User.findOne({ email }).exec((err, user) => {
           if (user) {
-            console.log('in.if user');
             const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
             const { _id, email, name, role } = user;
 
@@ -271,7 +271,6 @@ exports.googleLogin = (req, res) => {
               user: { _id, email, name, role }
             });
           } else {
-            console.log('in.else if user');
             const password = email + process.env.JWT_SECRET;
             user = new User({ name, email, password });
             user.save((err, data) => {
@@ -305,5 +304,54 @@ exports.googleLogin = (req, res) => {
 };
 
 exports.facebookLogin = (req, res) => {
-  //
+  console.log('FACEBOOK LOGIN ', req.body);
+
+  const { userID, accessToken } = req.body;
+  const url = `https://graph.facebook.com/v2.11/${userID}/?fields=id,name,email&access_token=${accessToken}`;
+
+  return fetch(url, {
+    method: 'GET'
+  })
+    .then(response => response.json())
+    .then(response => {
+      const { email, name } = response;
+      User.findOne({ email }).exec((err, user) => {
+        if (user) {
+          const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+          const { _id, email, name, role } = user;
+
+          return res.json({
+            token,
+            user: { _id, email, name, role }
+          });
+        } else {
+          const password = email + process.env.JWT_SECRET;
+          user = new User({ name, email, password });
+          user.save((err, data) => {
+            if (err) {
+              console.log('ERROR FACEBOOK LOGIN USER SAVE ', err);
+              return resp.status(400).json({
+                error: 'User signup failed with Facebook'
+              });
+            } else {
+              const token = jwt.sign({ _id: data._id }, process.env.JWT_SECRET, {
+                expiresIn: '1d'
+              });
+              const { _id, email, name, role } = data;
+
+              res.json({
+                token,
+                user: { _id, email, name, role }
+              });
+            }
+          });
+        }
+      });
+    })
+    .catch(err => {
+      console.log('ERROR FACEBOOK VERIFICATION ', err);
+      return res.status(400).json({
+        error: 'User verification failed with Facebook'
+      });
+    });
 };
