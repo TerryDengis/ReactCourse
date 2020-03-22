@@ -30,7 +30,7 @@ const Google = ({ informParent = f => f }) => {
             disabled={renderProps.disabled}
             className=" btn btn-danger btn-lg btn-block"
           >
-            <i class="fab fa-google"></i> Login with Google
+            <i class="fab fa-google pr-2"></i> Login with Google
           </button>
         )}
         onSuccess={responseGoogle}
